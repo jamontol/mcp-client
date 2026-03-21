@@ -4,40 +4,53 @@ import {
     langGraphPlatformEndpoint,
     LangChainAdapter
 } from "@copilotkit/runtime";
+import { LangGraphAgent } from "@copilotkit/runtime/langgraph"; // Import this!
 import { NextRequest } from "next/server";
 import { ChatOpenAI } from "@langchain/openai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-// Configure runtime upfront - this doesn't depend on the API key
+const langsmithApiKey = process.env.LANGSMITH_API_KEY as string;
+
 const runtime = new CopilotRuntime({
-    remoteEndpoints: [
-        langGraphPlatformEndpoint({
-            deploymentUrl: `${process.env.AGENT_DEPLOYMENT_URL || 'http://localhost:8123'}`,
-            langsmithApiKey: process.env.LANGSMITH_API_KEY,
-            agents: [
-                {
-                    name: 'mcp_agent', 
-                    description: 'A helpful LLM agent.',
-                }
-            ]
-        }),
-    ],
+  // Use 'agents' instead of 'remoteEndpoints'
+  agents: {
+    mcp_agent: new LangGraphAgent({
+      deploymentUrl: process.env.AGENT_DEPLOYMENT_URL || "http://localhost:8123",
+      langsmithApiKey,
+      graphId: "mcp_agent",
+    }),
+    }
 });
 
 export const POST = async (req: NextRequest) => {
     // Extract the user's API key from the request headers
-    const openaiApiKey = req.headers.get("x-openai-api-key");
+    // const openaiApiKey = req.headers.get("x-openai-api-key");
     
-    // Create model with the API key from headers
-    const model = new ChatOpenAI({
-        modelName: "gpt-4o-mini",
+    // // Create model with the API key from headers
+    // const model = new ChatOpenAI({
+    //     modelName: "gpt-4o-mini",
+    //     temperature: 0,
+    //     apiKey: openaiApiKey || process.env["OPENAI_API_KEY"],
+    // });
+
+    
+    const model = new ChatGoogleGenerativeAI({
+        modelName: "gemini-2.5-flash", 
+        apiKey: process.env.GOOGLE_API_KEY,
         temperature: 0,
-        apiKey: openaiApiKey || process.env["OPENAI_API_KEY"],
     });
     
     // Create service adapter with the model
+    // const serviceAdapter = new LangChainAdapter({
+    //     chainFn: async ({ messages, tools }) => {
+    //         return model.bindTools(tools, { strict: true }).stream(messages);
+    //     },
+    // });
+
     const serviceAdapter = new LangChainAdapter({
         chainFn: async ({ messages, tools }) => {
-            return model.bindTools(tools, { strict: true }).stream(messages);
+            // We manually bind tools and stream the response
+            return model.bindTools(tools).stream(messages);
         },
     });
 

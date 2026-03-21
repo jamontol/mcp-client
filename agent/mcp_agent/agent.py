@@ -5,15 +5,19 @@ It defines the workflow graph, state, tools, nodes and edges.
 
 from typing_extensions import Literal, TypedDict, Dict, List, Any, Union, Optional
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 from copilotkit import CopilotKitState
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.prebuilt import create_react_agent
+# from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from copilotkit.langgraph import (copilotkit_exit)
 import os
+
 
 # Define the connection type structures
 class StdioConnection(TypedDict):
@@ -24,6 +28,11 @@ class StdioConnection(TypedDict):
 class SSEConnection(TypedDict):
     url: str
     transport: Literal["sse"]
+
+class HTTPConnection(TypedDict):
+    url: str
+    transport: Literal["http"]
+
 
 # Type for MCP configuration
 MCPConfig = Dict[str, Union[StdioConnection, SSEConnection]]
@@ -66,35 +75,47 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> Command[Litera
 
     print(f"mcp_config: {mcp_config}, default: {DEFAULT_MCP_CONFIG}")
     # Set up the MCP client and tools using the configuration from state
-    async with MultiServerMCPClient(mcp_config) as mcp_client:
-        # Get the tools
-        mcp_tools = mcp_client.get_tools()
+
+    mcp_client = MultiServerMCPClient(mcp_config)
+    mcp_tools = await mcp_client.get_tools()
+    
+    # async with MultiServerMCPClient(mcp_config) as mcp_client:
+    #     # Get the tools
+    #     mcp_tools = mcp_client.get_tools()
         
-        # Create the react agent
-        model = ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
-        react_agent = create_react_agent(model, mcp_tools)
-        
-        # Prepare messages for the react agent
-        agent_input = {
-            "messages": state["messages"]
-        }
-        
-        # Run the react agent subgraph with our input
-        agent_response = await react_agent.ainvoke(agent_input)
-        
-        # Update the state with the new messages
-        updated_messages = state["messages"] + agent_response.get("messages", []) 
-        await copilotkit_exit(config)
-        # End the graph with the updated messages
-        # added the openai_api_keyand the mcp_config to modify the state
-        return Command(
-            goto=END,
-            update={
-                "messages": updated_messages,
-                "openai_api_key": state.get("openai_api_key"),
-                "mcp_config": state.get("mcp_config", DEFAULT_MCP_CONFIG)
-            },
-        )
+    # Create the react agent
+    #model = ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
+    model = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    google_api_key=os.getenv("GOOGLE_API_KEY"),
+    temperature=0,
+    convert_system_message_to_human=True # Helper for older Gemini versions if needed
+    )
+
+    react_agent  = create_agent(model, mcp_tools)
+    #react_agent = create_react_agent(model, mcp_tools)
+    
+    # Prepare messages for the react agent
+    agent_input = {
+        "messages": state["messages"]
+    }
+    
+    # Run the react agent subgraph with our input
+    agent_response = await react_agent.ainvoke(agent_input)
+    
+    # Update the state with the new messages
+    updated_messages = state["messages"] + agent_response.get("messages", []) 
+    await copilotkit_exit(config)
+    # End the graph with the updated messages
+    # added the openai_api_keyand the mcp_config to modify the state
+    return Command(
+        goto=END,
+        update={
+            "messages": updated_messages,
+            "openai_api_key": state.get("openai_api_key"),
+            "mcp_config": state.get("mcp_config", DEFAULT_MCP_CONFIG)
+        },
+    )
 
 # Define the workflow graph with only a chat node
 workflow = StateGraph(AgentState)
@@ -102,4 +123,4 @@ workflow.add_node("chat_node", chat_node)
 workflow.set_entry_point("chat_node")
 
 # Compile the workflow graph
-graph = workflow.compile(MemorySaver())
+graph = workflow.compile()#MemorySaver()
