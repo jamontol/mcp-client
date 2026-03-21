@@ -41,11 +41,11 @@ export default async function RootLayout({
       >
         <CopilotKit
           runtimeUrl="/api/copilotkit"
-          // agent="mcp_agent"
-          headers={{
-            "x-openai-api-key": apiKey, // API key from cookie or fallback
-          }}
-          showDevConsole={false}
+          agent="mcp_agent"
+          // headers={{
+          //   "x-openai-api-key": apiKey, // API key from cookie or fallback
+          // }}
+          showDevConsole={true}
         >
           {children}
         </CopilotKit>

@@ -99,7 +99,7 @@ const getTimeBasedGreeting = (): React.ReactNode => {
 
 export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarToggle: () => void }, CustomChatProps>((props, ref) => {
   const { onSettingsClick, isSidebarOpen, onSidebarToggle, hasApiKey = true } = props;
-  const { visibleMessages, appendMessage, isLoading, stopGeneration, setMessages} = useCopilotChat({id: "mcp_agent"});
+  const { visibleMessages, appendMessage, isLoading, stopGeneration, reset} = useCopilotChat({id: "mcp_agent"});
   const { setThreadId } = useCopilotContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -109,7 +109,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
   // Chat history state
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
-
+  const [localMessages, setLocalMessages] = useState<any[]>([]);
   // Add state for dropdown menu and rename functionality
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
@@ -131,6 +131,14 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+  
+  useEffect(() => {
+    // Only sync if the length actually changed and we have valid messages
+    if (visibleMessages && visibleMessages.length !== localMessages.length) {
+      setLocalMessages(visibleMessages);
+    }
+  }, [visibleMessages]);
+
 
   const handleRename = (chatId: string) => {
     const chat = chatHistory.find(c => c.id === chatId);
@@ -185,7 +193,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
           const mostRecentChat = reconstructedHistory[0];
           setActiveChatId(mostRecentChat.id);
           setThreadId(mostRecentChat.threadId);
-          setMessages(mostRecentChat.messages);
+          // setMessages(mostRecentChat.messages);
         }
       }
     } catch (error) {
@@ -218,7 +226,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
         });
       });
     }
-  }, [visibleMessages, activeChatId, setThreadId]); //setMessages, 
+  }, [visibleMessages, activeChatId, setThreadId]);
 
   // Update active chat when messages change
   useEffect(() => {
@@ -278,11 +286,8 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     const threadId = uuidv4();  // Create a valid UUID for LangGraph Platform
     
     // Clear any existing thread state first
-    
-    // reset()
-    
     setThreadId("");
-    setMessages([]);
+    setLocalMessages([]);
     
     // Small delay to ensure thread is cleared before setting the new one
     setTimeout(() => {
@@ -312,13 +317,13 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     if (chat) {
       // Clear any existing thread state first
       setThreadId("");
-      setMessages([]);
+      setLocalMessages([]);
       
       // Small delay to ensure thread is cleared before setting the new one
       setTimeout(() => {
         setActiveChatId(chatId);
         setThreadId(chat.threadId);  // Set the thread ID in CopilotKit
-        setMessages(chat.messages);
+        setLocalMessages(chat.messages);
       }, 50);
     }
   };
@@ -328,7 +333,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     setChatHistory(prev => prev.filter(chat => chat.id !== chatId));
     if (activeChatId === chatId) {
       setActiveChatId(null);
-      setMessages([]);
+      setLocalMessages([]);
     }
   };
 
@@ -567,14 +572,17 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
           ) : (
             // Chat View: Messages Area
             <div style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }} className="flex-grow overflow-y-auto py-6 space-y-6 w-full [&::-webkit-scrollbar]:hidden max-h-full h-[calc(100vh-180px)]">
-              {visibleMessages.map((msg) => {
+              {localMessages.map((msg) => {
                 let contentToRender: React.ReactNode = null;
                 let alignmentClass = 'justify-start'; // Default to assistant/left alignment
+                // 1. Normalize the role to lowercase to avoid Enum mismatches
+                const role = msg.role?.toLowerCase();
 
                 // --- Inline Checks for Rendering Logic ---
 
                 // USER MESSAGE
                 if ('role' in msg && msg.role === Role.User && 'content' in msg && typeof msg.content === 'string' && msg.content.trim() !== '') {
+                // if (role === 'user' && msg.content) {
                   alignmentClass = 'justify-start';  
                   contentToRender = (
                     <div className="flex items-center gap-3">
@@ -605,9 +613,8 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
                       </div>
                     </div>
                   );
-                }         
-                
-               
+                }
+
                 // ACTION EXECUTION MESSAGE (Agent Start)
                 // Check type exists and is ActionExecutionMessage, then check name exists
                 else if ('type' in msg && msg.type === 'ActionExecutionMessage' && 'name' in msg && typeof msg.name === 'string') {

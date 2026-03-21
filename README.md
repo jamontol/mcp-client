@@ -30,18 +30,17 @@ OPENAI_API_KEY=sk-...
 LANGSMITH_API_KEY=lsv2_...
 ```
 
-## Set Up Poetry:
+## Set Up uv:
 
-Poetry is used for dependency management in the agent service. To install Poetry, run:
+uv is used for dependency management in the agent service. To install uv, run:
 
 ```sh
-pip install poetry
+
 ```
 
 To verify the installation, run:
 
 ```sh
-poetry --version
 ```
 
 ## Development

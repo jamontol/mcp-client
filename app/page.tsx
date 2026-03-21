@@ -118,7 +118,7 @@ export default function Home() {
           </div>
         </div>
 
-        {showApiKeyNotification && (
+        {false && showApiKeyNotification && (
           <div className={`absolute top-20 z-50 transition-all duration-300 ${isLeftSidebarOpen ? 'left-72 right-0' : 'left-0 right-0'}`}>
             <div className="max-w-2xl w-full mx-auto px-4">
               <div className="rounded-xl border border-[#6666fc] bg-[#d4e1ff] px-6 py-4 shadow-md flex items-start justify-between gap-4">

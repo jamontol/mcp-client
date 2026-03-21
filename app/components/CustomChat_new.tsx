@@ -98,8 +98,9 @@ const getTimeBasedGreeting = (): React.ReactNode => {
 };
 
 export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarToggle: () => void }, CustomChatProps>((props, ref) => {
+  const [localMessages, setLocalMessages] = useState<any[]>([]);
   const { onSettingsClick, isSidebarOpen, onSidebarToggle, hasApiKey = true } = props;
-  const { visibleMessages, appendMessage, isLoading, stopGeneration, setMessages} = useCopilotChat({id: "mcp_agent"});
+  const { visibleMessages, appendMessage, isLoading, stopGeneration} = useCopilotChat({id: "mcp_agent"});
   const { setThreadId } = useCopilotContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -109,7 +110,6 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
   // Chat history state
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
-
   // Add state for dropdown menu and rename functionality
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
@@ -131,6 +131,14 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+  
+  useEffect(() => {
+    // Only sync if the length actually changed and we have valid messages
+    if (visibleMessages && visibleMessages.length !== localMessages.length) {
+      setLocalMessages(visibleMessages);
+    }
+  }, [visibleMessages]);
+
 
   const handleRename = (chatId: string) => {
     const chat = chatHistory.find(c => c.id === chatId);
@@ -185,7 +193,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
           const mostRecentChat = reconstructedHistory[0];
           setActiveChatId(mostRecentChat.id);
           setThreadId(mostRecentChat.threadId);
-          setMessages(mostRecentChat.messages);
+          setLocalMessages(mostRecentChat.messages);
         }
       }
     } catch (error) {
@@ -218,7 +226,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
         });
       });
     }
-  }, [visibleMessages, activeChatId, setThreadId]); //setMessages, 
+  }, [visibleMessages, activeChatId, setThreadId]);
 
   // Update active chat when messages change
   useEffect(() => {
@@ -278,11 +286,8 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     const threadId = uuidv4();  // Create a valid UUID for LangGraph Platform
     
     // Clear any existing thread state first
-    
-    // reset()
-    
     setThreadId("");
-    setMessages([]);
+    setLocalMessages([]);
     
     // Small delay to ensure thread is cleared before setting the new one
     setTimeout(() => {
@@ -312,13 +317,13 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     if (chat) {
       // Clear any existing thread state first
       setThreadId("");
-      setMessages([]);
+      setLocalMessages([]);
       
       // Small delay to ensure thread is cleared before setting the new one
       setTimeout(() => {
         setActiveChatId(chatId);
         setThreadId(chat.threadId);  // Set the thread ID in CopilotKit
-        setMessages(chat.messages);
+        setLocalMessages(chat.messages);
       }, 50);
     }
   };
@@ -328,7 +333,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     setChatHistory(prev => prev.filter(chat => chat.id !== chatId));
     if (activeChatId === chatId) {
       setActiveChatId(null);
-      setMessages([]);
+      setLocalMessages([]);
     }
   };
 
