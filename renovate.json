@@ -4,7 +4,7 @@
   "extends": [
     "config:recommended"
   ],
-  "poetry": {
+  "uv": {
     "enabled": true
   },
   "pep621": {
