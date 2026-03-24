@@ -146,7 +146,7 @@ export default function Home() {
             isSidebarOpen={isLeftSidebarOpen}
             onSidebarToggle={handleLeftSidebarToggle}
             onSettingsClick={() => setIsRightSidebarOpen(true)}
-            hasApiKey={hasApiKey} 
+            hasApiKey={true} 
           />
         </div>
       </div>

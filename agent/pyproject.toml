@@ -23,6 +23,7 @@ dependencies = [
     "langgraph",
     "langchain-google>=0.1.1",
     "langchain-google-genai>=4.2.1",
+    "langchain-openrouter"
 ]
 
 [project.scripts]

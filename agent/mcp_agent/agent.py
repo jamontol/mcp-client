@@ -6,6 +6,7 @@ It defines the workflow graph, state, tools, nodes and edges.
 from typing_extensions import Literal, TypedDict, Dict, List, Any, Union, Optional
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openrouter import ChatOpenRouter
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END
@@ -17,7 +18,9 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents import create_agent
 from copilotkit.langgraph import (copilotkit_exit)
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Define the connection type structures
 class StdioConnection(TypedDict):
@@ -85,11 +88,17 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> Command[Litera
         
     # Create the react agent
     #model = ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
-    model = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    google_api_key=os.getenv("GOOGLE_API_KEY"),
-    temperature=0,
-    convert_system_message_to_human=True # Helper for older Gemini versions if needed
+    # model = ChatGoogleGenerativeAI(
+    # model="gemini-2.0-flash-lite",
+    # google_api_key=os.getenv("GOOGLE_API_KEY"),
+    # temperature=0,
+    # convert_system_message_to_human=True # Helper for older Gemini versions if needed
+    # )
+
+    model = ChatOpenRouter(
+    model="nvidia/nemotron-3-super-120b-a12b:free",
+    api_key= os.getenv("OPENROUTER_API_KEY"),
+    temperature=0
     )
 
     react_agent  = create_agent(model, mcp_tools)

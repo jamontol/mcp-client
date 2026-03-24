@@ -8,6 +8,7 @@ import { LangGraphAgent } from "@copilotkit/runtime/langgraph"; // Import this!
 import { NextRequest } from "next/server";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenRouter } from "@langchain/openrouter";
 
 const langsmithApiKey = process.env.LANGSMITH_API_KEY as string;
 
@@ -34,11 +35,20 @@ export const POST = async (req: NextRequest) => {
     // });
 
     
-    const model = new ChatGoogleGenerativeAI({
-        modelName: "gemini-2.5-flash", 
-        apiKey: process.env.GOOGLE_API_KEY,
+    const model = new ChatOpenRouter({
+        model: "nvidia/nemotron-3-super-120b-a12b:free", 
+        apiKey: process.env.OPENROUTER_API_KEY,
         temperature: 0,
     });
+
+
+    // const model = new ChatGoogleGenerativeAI({
+    //     model: "gemini-2.0-flash-lite", 
+    //     apiKey: process.env.GOOGLE_API_KEY,
+    //     temperature: 0,
+    //     maxRetries: 2,
+    // });
+    
     
     // Create service adapter with the model
     // const serviceAdapter = new LangChainAdapter({
@@ -61,4 +71,15 @@ export const POST = async (req: NextRequest) => {
     });
 
     return handleRequest(req);
+};
+
+// This allows the frontend to "see" your agents via a GET request
+export const GET = async (req: NextRequest) => {
+  const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
+    runtime,
+    serviceAdapter: undefined, // GET requests don't need the LLM adapter
+    endpoint: "/api/copilotkit",
+  });
+
+  return handleRequest(req);
 };
