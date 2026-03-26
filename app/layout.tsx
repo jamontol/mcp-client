@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "@copilotkit/react-ui/styles.css";
-import { CopilotKit } from "@copilotkit/react-core";
+import "@copilotkit/react-core/v2";
+import { CopilotKitProvider } from "@copilotkit/react-core/v2";
 import { cookies } from 'next/headers';
 
 const geistSans = Geist({
@@ -39,16 +39,15 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased w-screen h-screen`}
       >
-        <CopilotKit
+        <CopilotKitProvider
           runtimeUrl="/api/copilotkit"
           agent="mcp_agent"
           // headers={{
           //   "x-openai-api-key": apiKey, // API key from cookie or fallback
           // }}
-          showDevConsole={true}
         >
           {children}
-        </CopilotKit>
+        </CopilotKitProvider>
       </body>
     </html>
   );

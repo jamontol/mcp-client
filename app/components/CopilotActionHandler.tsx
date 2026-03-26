@@ -1,6 +1,6 @@
 "use client";
 
-import { useCopilotAction } from "@copilotkit/react-core";
+import { useCopilotAction } from "@copilotkit/react-core/v2";
 import { ToolCallRenderer } from "../components/ToolCallRenderer";
 
 /**

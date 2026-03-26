@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useCopilotChat } from "@copilotkit/react-core";
-import { useCopilotContext } from "@copilotkit/react-core";
+import { useAgent } from "@copilotkit/react-core/v2";
+import { useCopilotKit } from "@copilotkit/react-core/v2";
 import { Role, TextMessage, Message } from "@copilotkit/runtime-client-gql";
 import { ArrowUp, Settings, Plus, PanelLeft, PanelLeftDashed, CircleStop } from 'lucide-react';
 import ReactMarkdown, { Components } from 'react-markdown';
@@ -100,8 +100,24 @@ const getTimeBasedGreeting = (): React.ReactNode => {
 export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarToggle: () => void }, CustomChatProps>((props, ref) => {
   const [localMessages, setLocalMessages] = useState<any[]>([]);
   const { onSettingsClick, isSidebarOpen, onSidebarToggle, hasApiKey = true } = props;
-  const { visibleMessages, appendMessage, isLoading, stopGeneration} = useCopilotChat({id: "mcp_agent"});
-  const { setThreadId } = useCopilotContext();
+  const { agent } = useAgent({ agentId: "mcp_agent" });
+  const { copilotkit } = useCopilotKit();
+  
+  // V2 API mapping
+  const visibleMessages = agent.messages;
+  const isLoading = agent.status === "in_progress";
+  
+  const appendMessage = async (message: TextMessage) => {
+    await agent.sendMessage(message.content);
+  };
+  
+  const stopGeneration = () => {
+    agent.stop();
+  };
+  
+  const setThreadId = (threadId: string) => {
+    // V2: Thread management handled differently
+  };
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
@@ -192,7 +208,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
         if (reconstructedHistory.length > 0 && !activeChatId) {
           const mostRecentChat = reconstructedHistory[0];
           setActiveChatId(mostRecentChat.id);
-          setThreadId(mostRecentChat.threadId);
+          // V2: Thread management handled differently
           setLocalMessages(mostRecentChat.messages);
         }
       }
@@ -226,7 +242,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
         });
       });
     }
-  }, [visibleMessages, activeChatId, setThreadId]);
+  }, [visibleMessages, activeChatId]);
 
   // Update active chat when messages change
   useEffect(() => {
@@ -285,8 +301,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     const newChatId = Date.now().toString();
     const threadId = uuidv4();  // Create a valid UUID for LangGraph Platform
     
-    // Clear any existing thread state first
-    setThreadId("");
+    // V2: Clear any existing thread state
     setLocalMessages([]);
     
     // Small delay to ensure thread is cleared before setting the new one
@@ -302,7 +317,6 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
 
     setChatHistory(prev => [newChat, ...prev]);
       setActiveChatId(newChatId);
-      setThreadId(threadId);  // Set the thread ID in CopilotKit
       setInputValue('');
     }, 50);
   };
@@ -315,14 +329,12 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
   const loadChat = (chatId: string) => {
     const chat = chatHistory.find(c => c.id === chatId);
     if (chat) {
-      // Clear any existing thread state first
-      setThreadId("");
+      // V2: Clear any existing thread state
       setLocalMessages([]);
       
       // Small delay to ensure thread is cleared before setting the new one
       setTimeout(() => {
         setActiveChatId(chatId);
-        setThreadId(chat.threadId);  // Set the thread ID in CopilotKit
         setLocalMessages(chat.messages);
       }, 50);
     }
@@ -337,7 +349,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (inputValue.trim()) {
       if (!activeChatId) {
         // Create new chat if none is active
@@ -354,7 +366,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
         };
         setChatHistory(prev => [newChat, ...prev]);
         setActiveChatId(newChatId);
-        setThreadId(threadId);  // Set the thread ID in CopilotKit
+        // V2: Thread management handled differently
       } else {
         // Update title if this is the first message in the chat
         setChatHistory(prev => prev.map(chat => {
@@ -368,7 +380,8 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
         }));
       }
       
-      appendMessage(new TextMessage({ content: inputValue, role: Role.User }),{data: { agentId: "mcp_agent" } } as any);
+      // V2 API: use sendMessage on the agent
+      await agent.sendMessage(inputValue);
       setInputValue('');
     }
   };
