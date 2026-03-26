@@ -28,27 +28,18 @@ export const POST = async (req: NextRequest) => {
     // const openaiApiKey = req.headers.get("x-openai-api-key");
     
     // // Create model with the API key from headers
-    // const model = new ChatOpenAI({
-    //     modelName: "gpt-4o-mini",
-    //     temperature: 0,
-    //     apiKey: openaiApiKey || process.env["OPENAI_API_KEY"],
-    // });
-
-    
-    const model = new ChatOpenRouter({
-        model: "nvidia/nemotron-3-super-120b-a12b:free", 
-        apiKey: process.env.OPENROUTER_API_KEY,
+    const model = new ChatOpenAI({
+        modelName: "gpt-4o-mini",
         temperature: 0,
+        apiKey: openaiApiKey || process.env["OPENAI_API_KEY"],
     });
 
-
+    
     // const model = new ChatGoogleGenerativeAI({
-    //     model: "gemini-2.0-flash-lite", 
+    //     modelName: "gemini-2.5-flash", 
     //     apiKey: process.env.GOOGLE_API_KEY,
     //     temperature: 0,
-    //     maxRetries: 2,
     // });
-    
     
     // Create service adapter with the model
     // const serviceAdapter = new LangChainAdapter({
