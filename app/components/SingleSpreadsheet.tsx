@@ -2,7 +2,7 @@
 import {
   useCopilotAction,
   useCopilotReadable,
-} from "@copilotkit/react-core";
+} from "@copilotkit/react-core/v2";
 import React from "react";
 import Spreadsheet from "react-spreadsheet";
 import { canonicalSpreadsheetData } from "../utils/canonicalSpreadsheetData";

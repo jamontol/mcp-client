@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useCoAgent } from "@copilotkit/react-core";
+import { useAgent } from "@copilotkit/react-core/v2";
 // import { ExampleConfigs } from "./ExampleConfigs";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { Trash2, Save } from "lucide-react";
@@ -76,16 +76,16 @@ export function MCPConfigForm({ onApiKeySaved }: MCPConfigFormProps) {
   // Initialize with potentially empty value from localStorage hook initially
   const [apiKeyInput, setApiKeyInput] = useState(savedApiKey || "");
 
-  // Initialize agent state with the data from localStorage
-  const { state: agentState, setState: setAgentState } = useCoAgent<AgentState>(
-    {
-      name: "mcp_agent",
-      initialState: {
-        mcp_config: savedConfigs,
-        openai_api_key: savedApiKey,
-      },
+  // Initialize agent state with the data from localStorage (V2)
+  const { agent } = useAgent({ agentId: "mcp_agent" });
+  const agentState = agent.state as AgentState | undefined;
+  const setAgentState = (newState: AgentState | ((prev: AgentState | undefined) => AgentState)) => {
+    if (typeof newState === 'function') {
+      agent.setState(newState(agentState));
+    } else {
+      agent.setState(newState);
     }
-  );
+  };
 
   // Effect to synchronize agentState API key when savedApiKey changes
   useEffect(() => {

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useCopilotChat } from "@copilotkit/react-core";
-import { useCopilotContext } from "@copilotkit/react-core";
+import { useAgent } from "@copilotkit/react-core/v2";
+import { useCopilotKit } from "@copilotkit/react-core/v2";
 import { Role, TextMessage, Message } from "@copilotkit/runtime-client-gql";
 import { ArrowUp, Settings, Plus, PanelLeft, PanelLeftDashed, CircleStop } from 'lucide-react';
 import ReactMarkdown, { Components } from 'react-markdown';
@@ -297,7 +297,6 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
 
     setChatHistory(prev => [newChat, ...prev]);
       setActiveChatId(newChatId);
-      setThreadId(threadId);  // Set the thread ID in CopilotKit
       setInputValue('');
     }, 50);
   };
@@ -332,7 +331,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (inputValue.trim()) {
       if (!activeChatId) {
         // Create new chat if none is active
@@ -349,7 +348,7 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
         };
         setChatHistory(prev => [newChat, ...prev]);
         setActiveChatId(newChatId);
-        setThreadId(threadId);  // Set the thread ID in CopilotKit
+        // V2: Thread management handled differently
       } else {
         // Update title if this is the first message in the chat
         setChatHistory(prev => prev.map(chat => {
@@ -363,7 +362,8 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
         }));
       }
       
-      appendMessage(new TextMessage({ content: inputValue, role: Role.User }),{data: { agentId: "mcp_agent" } } as any);
+      // V2 API: use sendMessage on the agent
+      await agent.sendMessage(inputValue);
       setInputValue('');
     }
   };
