@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useCopilotContext, useCopilotChatHeadless_c } from "@copilotkit/react-core";
+import { useCopilotChat, useCopilotContext } from "@copilotkit/react-core";
 import { Role, TextMessage, Message } from "@copilotkit/runtime-client-gql";
 import { ArrowUp, Settings, Plus, PanelLeft, PanelLeftDashed, CircleStop } from 'lucide-react';
 import ReactMarkdown, { Components } from 'react-markdown';
@@ -29,9 +29,10 @@ export const CustomChat = forwardRef<{ handleNewChat: () => void, handleSidebarT
   const { onSettingsClick, isSidebarOpen, onSidebarToggle, hasApiKey = true } = props;
   
   // 1. Hook setup with fallbacks to prevent "undefined" crashes
-  const { messages: visibleMessages, appendMessage, isLoading, stopGeneration, setMessages} = useCopilotChatHeadless_c();
+  const { visibleMessages = [], appendMessage, isLoading, stopGeneration, reset } = useCopilotChat(); // { id: "mcp_agent" }
   const context = useCopilotContext();
   const { setThreadId } = context;
+  const setMessages = (context as any).setMessages; // Cast for Free Tier history loading
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
