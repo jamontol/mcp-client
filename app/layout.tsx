@@ -38,7 +38,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased w-screen h-screen`}
       >
-        <CopilotKit
+        <CopilotKit publicApiKey="ck_pub_f38d0758c09b4ade8b57d172e2fce0c3"
           runtimeUrl="/api/copilotkit"
           agent="mcp_agent"
           // headers={{
